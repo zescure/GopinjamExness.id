@@ -1,636 +1,266 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compact Blackhole Loading</title>
-    <style>
-        :root {
-            --blackhole-size: min(30vmin, 150px);
-            --core-size: calc(var(--blackhole-size) * 0.33);
-            --accretion-size: calc(var(--blackhole-size) * 0.93);
-            --horizon-size: calc(var(--blackhole-size) * 0.67);
-            --ring1-size: calc(var(--blackhole-size) * 0.73);
-            --ring2-size: calc(var(--blackhole-size) * 0.8);
-            --ring3-size: calc(var(--blackhole-size) * 0.87);
-            --radiation-size: calc(var(--blackhole-size) * 1.33);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: #00f0ff;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-
-        .loading-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            background: rgba(0, 0, 0, 0.75);
-            z-index: 9999;
-            gap: 10px;
-        }
-
-        .blackhole-system {
-            position: relative;
-            width: var(--blackhole-size);
-            height: var(--blackhole-size);
-        }
-
-        .blackhole-core {
-            width: var(--core-size);
-            height: var(--core-size);
-            background: radial-gradient(circle at center, 
-                #000000 0%,
-                #1a0f1f 50%,
-                #000000 100%);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 
-                0 0 calc(var(--core-size) * 0.5) #4a0045,
-                0 0 calc(var(--core-size) * 1) #2e0029,
-                inset 0 0 calc(var(--core-size) * 0.3) #ff00dd;
-            animation: pulse 2s infinite;
-        }
-
-        .accretion-disk {
-            width: var(--accretion-size);
-            height: var(--accretion-size);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background: transparent;
-            box-shadow: 
-                0 0 calc(var(--accretion-size) * 0.2) #ff00dd,
-                inset 0 0 calc(var(--accretion-size) * 0.15) #ff00dd;
-            animation: spin 10s linear infinite;
-        }
-
-        .event-horizon {
-            width: var(--horizon-size);
-            height: var(--horizon-size);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: min(1px, 0.2vmin) solid rgba(255, 0, 221, 0.3);
-            border-radius: 50%;
-            animation: pulse-ring 2s infinite;
-        }
-
-        .radiation-ring {
-            position: absolute;
-            border: min(1px, 0.2vmin) solid transparent;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-        }
-
-        .ring-1 {
-            width: var(--ring1-size);
-            height: var(--ring1-size);
-            border-top: min(1px, 0.2vmin) solid #ff00dd;
-            animation: spin 3s linear infinite;
-        }
-
-        .ring-2 {
-            width: var(--ring2-size);
-            height: var(--ring2-size);
-            border-bottom: min(1px, 0.2vmin) solid #9000ff;
-            animation: spin-reverse 4s linear infinite;
-        }
-
-        .ring-3 {
-            width: var(--ring3-size);
-            height: var(--ring3-size);
-            border-left: min(1px, 0.2vmin) solid #0099ff;
-            animation: spin 5s linear infinite;
-        }
-
-        .radiation {
-            position: absolute;
-            width: var(--radiation-size);
-            height: var(--radiation-size);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle at center,
-                rgba(255, 0, 221, 0.1) 0%,
-                rgba(144, 0, 255, 0.05) 50%,
-                transparent 70%
-            );
-            animation: radiation-pulse 3s infinite;
-        }
-
-        .loading-text {
-            color: #ff00dd;
-            font-size: clamp(0.8rem, 2vmin, 1rem);
-            text-align: center;
-            text-shadow: 0 0 5px #ff00dd;
-            animation: glow 1.5s infinite;
-            padding: 0 10px;
-            margin: 0;
-        }
-
-        .particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            animation: spin 8s linear infinite;
-        }
-
-        .particle {
-            position: absolute;
-            width: min(2px, 0.4vmin);
-            height: min(2px, 0.4vmin);
-            background: #fff;
-            border-radius: 50%;
-            animation: particle-float 3s infinite;
-        }
-
-        .main-content {
-            display: none;
-            color: white;
-            text-align: center;
-            padding: min(10px, 2vmin);
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        @keyframes spin-reverse {
-            0% { transform: translate(-50%, -50%) rotate(360deg); }
-            100% { transform: translate(-50%, -50%) rotate(0deg); }
-        }
-
-        @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(0.8); }
-            50% { transform: translate(-50%, -50%) scale(1); }
-            100% { transform: translate(-50%, -50%) scale(0.8); }
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.8; }
-            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.4; }
-            100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.8; }
-        }
-
-        @keyframes glow {
-            0% { text-shadow: 0 0 5px #ff00dd; }
-            50% { text-shadow: 0 0 10px #ff00dd, 0 0 15px #ff00dd; }
-            100% { text-shadow: 0 0 5px #ff00dd; }
-        }
-
-        @keyframes particle-float {
-            0% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.5) rotate(180deg); }
-            100% { transform: scale(1) rotate(360deg); }
-        }
-
-        @keyframes radiation-pulse {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
-        }
-    </style>
-</head>
-<body>
-    <div class="loading-container" id="loadingScreen">
-        <div class="blackhole-system">
-            <div class="radiation"></div>
-            <div class="accretion-disk"></div>
-            <div class="event-horizon"></div>
-            <div class="radiation-ring ring-1"></div>
-            <div class="radiation-ring ring-2"></div>
-            <div class="radiation-ring ring-3"></div>
-            <div class="blackhole-core"></div>
-            <div class="particles">
-                <script>
-                    // Create particles dynamically
-                    for(let i = 0; i < 12; i++) {
-                        const particle = document.createElement('div');
-                        particle.className = 'particle';
-                        particle.style.top = Math.random() * 100 + '%';
-                        particle.style.left = Math.random() * 100 + '%';
-                        particle.style.animationDelay = Math.random() * 2 + 's';
-                        document.querySelector('.particles').appendChild(particle);
-                    }
-                </script>
-            </div>
-        </div>
-        <div class="loading-text">Sedang memuat konten...</div>
-    </div>
-
-    <script>
-        window.onload = function() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const mainContent = document.getElementById('mainContent');
-            
-            setTimeout(function() {
-                loadingScreen.style.display = 'none';
-                mainContent.style.display = 'block';
-            }, 3000);
-        };
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fix Scroll</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GO UNLIMITED EXNESS Account</title>
+  <!-- Tailwind (opsional) + FontAwesome -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
   <style>
+    :root {
+      --clr-bg: #0b3d0b;        /* hijau gelap */
+      --clr-bg-light: #1a4f1a;  /* hijau sedang */
+      --clr-white: #ffffff;
+      --clr-accent: #00c851;    /* hijau terang */
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      margin: 0;
-      padding: 0;
-      overflow-y: auto; /* Pastikan scroll vertikal diaktifkan */
+      background: var(--clr-bg);
+      color: var(--clr-white);
+      font-family: Arial, sans-serif;
+      line-height:1.5;
+    }
+    a { color: var(--clr-accent); text-decoration:none; }
+
+    /* Navbar */
+    nav {
+      position: fixed; top:0; left:0; width:100%;
+      background: var(--clr-bg-light);
+      padding:0.75rem 1.5rem;
+      display:flex; align-items:center; justify-content:space-between;
+      z-index:50;
+    }
+    nav h1 { font-size:1.5rem; }
+    nav button {
+      background: var(--clr-accent);
+      color: var(--clr-white);
+      padding:0.5rem 1rem;
+      border:none; border-radius:0.375rem;
+      cursor:pointer;
     }
 
-    .scrollable {
-      height: 0.1px; /* Atur tinggi elemen */
-      overflow-y: scroll; /* Aktifkan scroll jika konten melebihi batas */
-      border: 1px solid #ccc;
-      padding: 10px;
+    /* Main container */
+    .container { max-width:1024px; margin:5rem auto 2rem; padding:0 1rem; }
+
+    /* Elegant cards */
+    .card {
+      background: var(--clr-bg-light);
+      border:1px solid var(--clr-accent);
+      border-radius:0.75rem;
+      padding:1.5rem;
+      margin-bottom:1.5rem;
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
+    .card h2 { font-size:1.25rem; margin-bottom:0.75rem; }
+    .card p { margin-bottom:1rem; }
+
+    /* Forms */
+    .input, select {
+      width:100%;
+      padding:0.75rem 1rem;
+      border:2px solid var(--clr-accent);
+      border-radius:0.5rem;
+      background: transparent;
+      color: var(--clr-white);
+      margin-top:0.25rem;
+      margin-bottom:1rem;
+    }
+    .input::placeholder { color: rgba(255,255,255,0.6); }
+
+    /* Button styles */
+    .btn-primary {
+      background: var(--clr-accent);
+      color: var(--clr-white);
+      padding:0.75rem 1.25rem;
+      border:none; border-radius:0.5rem;
+      cursor:pointer;
+      font-weight:bold;
     }
 
-    .content {
-      height: 0.1px; /* Konten lebih tinggi dari container */
-      background-color: #f0f0f0;
+    /* Rate display */
+    .rate-display {
+      background: var(--clr-bg);
+      border:1px solid var(--clr-accent);
+      border-radius:1.5rem;
+      padding:1rem;
+      text-align:center;
+      margin-top:1rem;
     }
+
+    /* Trade activity modal */
+    .trade-modal {
+      position:fixed;
+      bottom:1rem; left:1rem;
+      width:240px;
+      background: var(--clr-bg-light);
+      border:1px solid var(--clr-accent);
+      border-radius:0.5rem;
+      padding:0.75rem 1rem;
+      font-size:0.875rem;
+      z-index:9999;
+    }
+    .trade-modal h4 {
+      margin-bottom:0.5rem;
+      font-size:1rem;
+      color: var(--clr-accent);
+    }
+    .trade-modal p { margin:0; }
+
+    /* Loading screen */
+    .loading-container {
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(0, 0, 0, 0.7);
+      color: var(--clr-white);
+      font-size:1rem;
+      z-index:10000;
+    }
+    .hidden { display:none !important; }
   </style>
 </head>
 <body>
-  <div class="scrollable">
-    <div class="content">
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="loading-container">
+    <div>
+      <i class="fas fa-sync-alt fa-spin fa-2x mb-2"></i>
+      <div>Memuat konten…</div>
     </div>
   </div>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GO 1:UNLIMITED EXNESS Account</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
-        }
 
-        @keyframes glow {
-            0% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(147, 51, 234, 0.5); }
-            100% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.3); }
-        }
+  <!-- Navbar -->
+  <nav>
+    <div class="flex items-center space-x-3">
+      <i class="fas fa-chart-line text-xl text-accent"></i>
+      <h1>GO UNLIMITED EXNESS</h1>
+    </div>
+    <button onclick="tambahAkun()">Minta Akun</button>
+  </nav>
 
-        .space-bg {
-            background: 
-                radial-gradient(circle at 50% 50%, rgba(219, 39, 119, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 90% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-                linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .space-bg::before {
-            content: '';
-            position: absolute;
-            width: 270%;
-            height: 250%;
-            top: -50%;
-            left: -50%;
-            background-image: 
-                radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-                radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            background-position: 0 0, 25px 25px;
-            animation: space-scroll 600s linear infinite;
-        }
-
-        @keyframes space-scroll {
-            10% { transform: translate(0, 0); }
-            10000% { transform: translate(-50px, -50px); }
-        }
-
-        .elegant-card {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            backdrop-filter: blur(20px);
-            transition: all 0.3s ease;
-        }
-
-        .elegant-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
-        }
-
-        .elegant-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-            color: white;
-        }
-
-        .elegant-input:hover {
-            border-color: rgba(147, 51, 234, 0.5);
-            box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .elegant-button {
-            background: linear-gradient(135deg, #9333ea 0%, #4f46e5 100%);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .elegant-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .elegant-text-glow {
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        .rate-display {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            transition: all 0.5s ease;
-        }
-
-        .rate-display:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.02);
-        }
-
-        .floating {
-            animation: float 17s ease-in-out infinite;
-        }
-
-        .glow-effect {
-            animation: glow 17s infinite;
-        }
-
-        .error-message {
-            background-color: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 100rem;
-            display: none;
-        }
-    </style>
-</head>
-<body class="space-bg min-h-screen text-white">
-    <!-- Navbar -->
-    <nav class="fixed w-full z-50 elegant-card bg-opacity-95">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-globe text-3xl text-purple-400"></i>
-                <h1 class="text-3xl font-bold elegant-text-glow bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-                    GO UNLIMITED LEVERAGE Account
-                </h1>
-            </div>
-            <button onclick="tambahAkun()" class="elegant-button px-6 py-3 rounded-full text-white font-bold flex items-center space-x-2">
-                <i class="fas fa-plus-circle"></i>
-                <span>Minta Akun Via E-mail</span>
-            </button>
-        </div><h1>⏬⏬⏬</h1>
-        <h7>⬇️GO PINJAM Account exness dengan kelebihan utama⬇️</h7>
-        <h4>VIA = METATRADER4/5</h4>
-        <h3>akun = Semua Jenis Akun </h3>
-        <h3>leverage = 1:Tak Terbatas</h3>
-        <h3>trading = Tanpa KTP(IDENTITAS)</h3>
-        <h3>sistem = pinjam akun</h3>
-        <h3>kelebihan = semua sistem kerja sama seperti exness<
-        </h3>
-        <h5>Keamanan Dijamin @ZEESCURE @ZEETRADING.ID @HOLEZCAPITAL</h5>
-        <h4>Note:Kami hanya penyedia layanan pinjam akun,kami bukan pemilik broker,Exness Adalah pihak utama broker</h4>
-        
-        <h5> ↘️@ZEESCURE BY BISAJASA.ID Adalah komunitas sekaligus Konsultan investasi dengan kualitas terbaik tanpa penipuan alias transparan↙️</h5>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="container mx-auto px-6 pt-28 pb-12">
-        <!-- Rate Display -->
-        <div class="elegant-card rounded-3xl p-8 mb-12 floating">
-            <h2 class="text-3xl font-bold mb-8 elegant-text-glow flex items-center">
-                <i class="fas fa-chart-line mr-4 text-purple-400"></i>
-                Live Exchange Rates
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="rate-display rounded-2xl p-6 glow-effect">
-                    <p class="text-xl mb-3 flex items-center text-purple-200">
-                        <i class="fas fa-arrow-up mr-3 text-green-400"></i>
-                        Deposit Rate
-                    </p>
-                    <p class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-blue-300">
-                        Rp 16.785/USD
-                    </p>
-                </div>
-                <div class="rate-display rounded-2xl p-6 glow-effect">
-                    <p class="text-xl mb-3 flex items-center text-purple-200">
-                        <i class="fas fa-arrow-down mr-3 text-pink-400"></i>
-                        Withdrawal Rate
-                    </p>
-                    <p class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300">
-                        Rp 15.250/USD
-                    </p>
-                </div>
-                <div class="rate-display rounded-2xl p-6 glow-effect">
-                    <p class="text-xl mb-3 flex items-center text-purple-200">
-                        <i class="fas fa-cog mr-3 text-blue-400"></i>
-                        Service Fee
-                    </p>
-                    <p class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">
-                        Rp 7.500
-                    </p>
-                </div>
-            </div>
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Live Rates -->
+    <div class="card">
+      <h2><i class="fas fa-globe mr-2"></i>Live Exchange Rates</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="rate-display">
+          <p>Deposit Rate</p>
+          <p class="text-2xl font-bold">Rp 16.785/USD</p>
         </div>
-        <!-- Transaction Sections -->
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Deposit Section -->
-            <div class="elegant-card rounded-3xl p-8">
-                <h2 class="text-2xl font-bold mb-8 elegant-text-glow flex items-center">
-                    <i class="fas fa-rocket mr-3 text-green-400"></i>
-                    Deposit Funds
-                </h2>
-                <form onsubmit="handleDeposit(event)" class="space-y-6">
-                    <div>
-                        <label class="block text-purple-100 mb-2 text-lg">Amount (USD) (min $10)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-3.5 text-purple-300">$</span>
-                            <input type="number" id="depositAmount" 
-                            min="10"
-                            id ="option"
-                                   class="w-full elegant-input p-4 pl-8 rounded-xl"
-                                   placeholder="Enter amount">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-purple-100 mb-2 text-lg">Payment Method(Via Pulsa min$50(waktu tunggu 1/3jam)</label>
-                        <select class="w-full elegant-input p-4 rounded-xl">
-                            <option>pilih</option>
-                            <option>Bank Transfer</option>
-                            <option>QRIS</option>
-                            <option>DANA</option>
-                            <option>GOPAY</option>
-                            <option>OVO</option>
-                           <option>pulsa Telkomsel</option>
-                           <option>pulsa Indosat</option>
-                           <option>pulsa Axis/Xl</option>
-                           <option>Usdt ERC20
-                        </option>
-                        <option>Usdc</option>
-                        <option>Bitcoin wallet</option>
-                        id="option"
-                        </select>
-                    </div>
-                    <div class="rate-display rounded-xl p-6 mt-6">
-                        <p class="text-purple-100 text-lg">Total Payment:</p>
-                        <p class="text-4xl font-bold elegant-text-glow text-green-300" id="depositTotal">Rp 0</p>
-                        <p class="text-sm text-purple-300 mt-2">Rate: Rp 16.785/USD</p>
-                    </div>
-                    <button type="button" onclick="kirimWhatsapp('deposit')" 
-                            class="elegant-button w-full py-4 rounded-xl text-white font-bold flex items-center justify-center space-x-2">
-                        <i class="fab fa-whatsapp"></i>
-                        <span>PROSES</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Withdrawal Section -->
-            <div class="elegant-card rounded-3xl p-8">
-                <h2 class="text-2xl font-bold mb-8 elegant-text-glow flex items-center">
-                    <i class="fas fa-paper-plane mr-3 text-pink-400"></i>
-                    Withdraw Funds
-                </h2>
-                <form onsubmit="handleWithdrawal(event)" class="space-y-6">
-                    <div>
-                        <label class="block text-purple-100 mb-2 text-lg">Amount (USD) (min $15)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-3.5 text-purple-300">$</span>
-                            <input type="number" id="withdrawAmount"
-                            min="15"
-                                   class="w-full elegant-input p-4 pl-8 rounded-xl"
-                                   placeholder="Enter amount">
-                        </div>
-                    </div>
-                    <div>
-                      <label class="block text-purple-100 mb-2 text-lg">Bank/E-Wallet Name</label>
-                        <input type="text" id="bankName" 
-                               class="w-full elegant-input p-4 rounded-xl"
-                               placeholder="Enter bank or e-wallet name" required>
-                    </div>
-                    <div>
-                        <label class="block text-purple-100 mb-2 text-lg">Account Number</label>
-                        <input type="text" id="accountNumber"
-                               class="w-full elegant-input p-4 rounded-xl"
-                               placeholder="Enter account number" required>
-                    </div>
-                    <div>
-                        <label class="block text-purple-100 mb-2 text-lg">Account Holder Name</label>
-                        <input type="text" id="accountName"
-                               class="w-full elegant-input p-4 rounded-xl"
-                               placeholder="Enter account holder name" required>
-                    </div>
-                    <div class="rate-display rounded-xl p-6 mt-6">
-                        <p class="text-purple-100 text-lg">You'll Receive:</p>
-                        <p class="text-4xl font-bold elegant-text-glow text-pink-300" id="withdrawTotal">Rp 0</p>
-                        <p class="text-sm text-purple-300 mt-2">Rate: Rp 15.250/USD</p>
-                    </div>
-                    <button type="button" onclick="kirimWhatsapp('withdraw')" 
-                            class="w-full py-4 rounded-xl text-white font-bold flex items-center justify-center space-x-2"
-                            style="background: linear-gradient(135deg, #25d366 0%, #128c7e 100%)">
-                        <i class="fab fa-whatsapp"></i>
-                        <span>TARIK SALDO</span>
-                    </button>
-                </form>
-            </div>
+        <div class="rate-display">
+          <p>Withdrawal Rate</p>
+          <p class="text-2xl font-bold">Rp 15.250/USD</p>
         </div>
+        <div class="rate-display">
+          <p>Service Fee</p>
+          <p class="text-2xl font-bold">Rp 7.500</p>
+        </div>
+      </div>
     </div>
 
-    <script>
-        const DEPOSIT_RATE = 16785;
-        const WITHDRAWAL_RATE = 15250;
-        const SERVICE_FEE = 7500;
+    <!-- Deposit & Withdraw Forms -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Deposit -->
+      <div class="card">
+        <h2><i class="fas fa-plus-circle mr-2"></i>Deposit Funds</h2>
+        <form onsubmit="return false;">
+          <label>Amount (USD):</label>
+          <input id="depositAmount" type="number" min="10" placeholder="Min $10" class="input">
+          <label>Payment Method:</label>
+          <select class="input">
+            <option>Pilih…</option>
+            <option>Bank Transfer</option>
+            <option>QRIS</option>
+            <option>DANA</option>
+            <!-- … -->
+          </select>
+          <div class="rate-display">
+            <p>Total Payment:</p>
+            <p id="depositTotal" class="text-2xl font-bold">Rp 0</p>
+            <p class="text-sm">Rate: Rp 16.785/USD</p>
+          </div>
+          <button type="button" onclick="kirimWhatsapp('deposit')" class="btn-primary w-full mt-4">
+            <i class="fab fa-whatsapp mr-2"></i>PROSES
+          </button>
+        </form>
+      </div>
 
-        function calculateTotal(amount, isDeposit = true) {
-            const rate = isDeposit ? DEPOSIT_RATE : WITHDRAWAL_RATE;
-            const baseAmount = amount * rate;
-            return isDeposit ? baseAmount + SERVICE_FEE : baseAmount - SERVICE_FEE;
-        }
+      <!-- Withdraw -->
+      <div class="card">
+        <h2><i class="fas fa-paper-plane mr-2"></i>Withdraw Funds</h2>
+        <form onsubmit="return false;">
+          <label>Amount (USD):</label>
+          <input id="withdrawAmount" type="number" min="15" placeholder="Min $15" class="input">
+          <label>Bank / E‑Wallet Name:</label>
+          <input id="bankName" type="text" required class="input">
+          <label>Account Number:</label>
+          <input id="accountNumber" type="text" required class="input">
+          <label>Holder Name:</label>
+          <input id="accountName" type="text" required class="input">
+          <div class="rate-display">
+            <p>You'll Receive:</p>
+            <p id="withdrawTotal" class="text-2xl font-bold">Rp 0</p>
+            <p class="text-sm">Rate: Rp 15.250/USD</p>
+          </div>
+          <button type="button" onclick="kirimWhatsapp('withdraw')" class="btn-primary w-full mt-4">
+            <i class="fab fa-whatsapp mr-2"></i>TARIK SALDO
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 
-        function formatRupiah(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR'
-            }).format(amount);
-        }
+  <!-- Trade Activity Modal -->
+  <div class="tab-container trade-modal">
+    <h4>Aktivitas Trade Member</h4>
+    <p id="trade-activity">Memuat data…</p>
+  </div>
 
-        document.getElementById('depositAmount').addEventListener('input', (e) => {
-            const amount = parseFloat(e.target.value) || 0;
-            const total = calculateTotal(amount, true);
-              document.getElementById('depositTotal').textContent = formatRupiah(total);
-        });
+  <script>
+    // Loading screen hide
+    window.addEventListener('load', () => {
+      setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 2000);
+    });
 
-        document.getElementById('withdrawAmount').addEventListener('input', (e) => {
-            const amount = parseFloat(e.target.value) || 0;
-            const total = calculateTotal(amount, false);
-            document.getElementById('withdrawTotal').textContent = formatRupiah(total);
-        });
+    // Deposit/Withdraw total calc
+    const DEPOSIT_RATE = 16785, WITHDRAW_RATE = 15250, SERVICE_FEE = 7500;
+    function formatIDR(x){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR'}).format(x);}
+    document.getElementById('depositAmount').addEventListener('input', e => {
+      const amt = +e.target.value||0;
+      const tot = amt*DEPOSIT_RATE + SERVICE_FEE;
+      document.getElementById('depositTotal').textContent = formatIDR(tot);
+    });
+    document.getElementById('withdrawAmount').addEventListener('input', e => {
+      const amt = +e.target.value||0;
+      const tot = amt*WITHDRAW_RATE - SERVICE_FEE;
+      document.getElementById('withdrawTotal').textContent = formatIDR(tot);
+    });
 
-        function kirimWhatsapp(type) {
-            const phoneNumber = "6285697747768"; // Ganti dengan nomor WhatsApp Anda
-            const depositAmount = document.getElementById('depositAmount').value || 0;
-            const withdrawAmount = document.getElementById('withdrawAmount').value || 0;
+    // WhatsApp
+    function kirimWhatsapp(type){
+      const no="6285697747768", msg = {
+        deposit:`Halo, deposit ${document.getElementById('depositAmount').value} USD.`,
+        withdraw:`Halo, tarik ${document.getElementById('withdrawAmount').value} USD.`
+      }[type];
+      window.open(`https://wa.me/${no}?text=${encodeURIComponent(msg)}`,'_blank');
+    }
 
-            let message = "";
-            if (type === "deposit") {
-                const total = calculateTotal(depositAmount, true);
-                message = `Halo, saya ingin melakukan deposit.\n\nJumlah: ${depositAmount} USD\nTotal Pembayaran: ${formatRupiah(total)}\nRate: Rp 16.785/USD Metode Pembayaran:(isi)`;
-            } else if (type === "withdraw") {
-                const total = calculateTotal(withdrawAmount, false);
-                message = `Halo, saya ingin melakukan penarikan.\n\nJumlah: ${withdrawAmount} USD\nJumlah yang diterima: ${formatRupiah(total)}\nRate: Rp 15.250/USD`;
-            }
+    // Trade activity update setiap 3 detik
+    const markets = ['XAU/USD','GBP/USD','USD/JPY','USD/CHF','CRUDE OIL','HANGSENG','US500','IDX'];
+    function genUser(){
+      let s='';for(let i=0;i<9;i++)s+=Math.floor(Math.random()*10);return 'user'+s+'2025';
+    }
+    function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+    function updateTrade(){
+      const u=genUser(), amt=randInt(1,9999), isP=Math.random()<.5;
+      document.getElementById('trade-activity').textContent =
+        `${u} tutup ${isP?'Keuntungan':'Kerugian'} (${isP?'+':'-'}USD${amt}) Market ${markets[randInt(0,markets.length-1)]}`;
+    }
+    updateTrade(); setInterval(updateTrade,3000);
 
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-            window.open(whatsappUrl, "_blank");
-        }
-    </script>
+    function tambahAkun(){ alert('Form minta akun via e‑mail.'); }
+  </script>
 </body>
 </html>
